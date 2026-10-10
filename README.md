@@ -6,6 +6,10 @@ A bridge bot written in Rust that forwards text messages between **Telegram**, *
 Telegram ↔ bridge-bot ↔ LXMF / RRC
 ```
 
+### AI Disclosure
+
+AI tools were used to assist with the development of this project.
+
 ### Features
 
 - One-way and bidirectional routes, including multiple destinations.
