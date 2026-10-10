@@ -118,7 +118,7 @@ impl Lxmf {
             .get(&source)
             .cloned()
             .or_else(|| lxmf_core::display_name_from_app_data(recalled.app_data.as_deref()))
-            .unwrap_or_else(|| String::new());
+            .unwrap_or_default();
         let source_head = source.get(..4).unwrap_or_default();
         let source_tail = source
             .get(source.len() - 2..source.len())
@@ -127,7 +127,7 @@ impl Lxmf {
         username.push_str(source_head);
         username.push_str("..");
         username.push_str(source_tail);
-        username.push_str("]");
+        username.push(']');
         Ok(Some(Incoming {
             origin: Endpoint {
                 service: self.name.clone(),

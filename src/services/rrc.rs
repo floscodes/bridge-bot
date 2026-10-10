@@ -310,7 +310,7 @@ impl Rrc {
             .nickname
             .clone()
             .filter(|n| !n.trim().is_empty())
-            .unwrap_or_else(|| String::new());
+            .unwrap_or_default();
         let identity = hex::encode(envelope.source);
         let identity_head = identity.get(..4).unwrap_or_default();
         let identity_tail = identity
@@ -322,7 +322,7 @@ impl Rrc {
         username.push_str(identity_head);
         username.push_str("..");
         username.push_str(identity_tail);
-        username.push_str("]");
+        username.push(']');
 
         let text = envelope.text().context("RRC text missing")?;
         Ok(Some(Incoming {
