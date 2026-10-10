@@ -1,0 +1,27 @@
+[package]
+name = "bridge-bot"
+version = "0.1.0"
+edition = "2024"
+default-run = "bridge-bot"
+
+[dependencies]
+anyhow = "1"
+async-trait = "0.1"
+clap = { version = "4", features = ["derive"] }
+lxmf-wire = "=0.13.0"
+rmpv = "1"
+ciborium = "0.2"
+hex = "0.4"
+rand = "0.8"
+rns-runtime = { git = "https://github.com/ratspeak/rsReticulum.git", rev = "49aa33db1bbe8c7d93b12c4e8fa378ba5060376e" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+teloxide = { version = "0.17", default-features = false, features = ["rustls"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "time", "sync"] }
+toml = "0.9"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { version = "1", features = ["test-util", "net", "io-util"] }

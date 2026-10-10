@@ -1,0 +1,33 @@
+# Build output
+/target/
+
+# Local configuration, copies and backups (publish only the example)
+bridge-bot.toml*
+!bridge-bot.toml.example
+*.local.toml
+.env
+.env.*
+!.env.example
+
+# Reticulum private identities and runtime state
+.bridge-bot/
+*-identity
+identity-*
+
+# Credentials and local agent/cloud settings
+*.pem
+*.key
+*.p12
+*.pfx
+.aws/
+.agents/
+.codex/
+
+# Logs, backups and editor files
+*.log
+*.bak
+*.backup
+*.swp
+*.swo
+*~
+.DS_Store

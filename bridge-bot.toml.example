@@ -1,0 +1,61 @@
+[services.telegram]
+token = "TOKEN_FROM_BOTFATHER"
+
+[services.lxmf]
+# Optional: defaults to .bridge-bot/lxmf-identity when omitted.
+# Load the existing identity file, or create and save a new one if it does not exist.
+# An invalid or unreadable existing file causes an error and is not overwritten.
+identity_path = ".bridge-bot/lxmf-identity"
+display_name = "bridge-bot"
+# The bot logs its LXMF delivery destination, derived from this persistent identity.
+
+[[services.lxmf.interfaces]]
+type = "auto"
+# For a TCP connection instead, use type = "tcp_client", host = "your-peer", port = 4242.
+
+[services.lxmf.usernames]
+"00000000000000000000000000000002" = "Alice"
+
+[[bridges]]
+from = { service = "telegram", chat = "-1001234567890" }
+to = { service = "lxmf", chat = "00000000000000000000000000000002" }
+bidirectional = true
+
+# Add further [[bridges]] entries for other chats or peers.
+# bidirectional = false forwards only from -> to (also the default).
+
+# Optional RRC hub (native Rust Reticulum runtime).
+# [services.rrc]
+# hub = "00000000000000000000000000000003"
+# Optional: defaults to .bridge-bot/rrc-identity when omitted.
+# Load the existing identity file, or create and save a new one if it does not exist.
+# An invalid or unreadable existing file causes an error and is not overwritten.
+# identity_path = ".bridge-bot/rrc-identity"
+# nickname = "bridge-bot"
+# reticulum_config = ".bridge-bot/reticulum"
+#
+# [[services.rrc.interfaces]]
+# type = "tcp_client"
+# host = "your-reticulum-peer.example"
+# port = 4242
+#
+# [[bridges]]
+# from = { service = "telegram", chat = "-1001234567890", message_thread_id = 42 }
+# Leading # characters in room names are removed automatically (#lobby becomes lobby).
+# to = { service = "rrc", room = "#lobby" }
+# bidirectional = true
+
+# message_thread_id identifies the topic within the required Telegram chat. For General, explicitly use message_thread_id = 1.
+# Omit message_thread_id only for Telegram groups without forum topics.
+# Forum groups without an explicit room mapping log an error; no fallback room.
+# Add another bridge with message_thread_id = 57 and room = "#news" for a second room pair.
+
+# Optional: omit this entire table to use the defaults shown below.
+# Total attempts include the initial send; pending operations live only in RAM.
+[retry]
+max_attempts = 6
+initial_delay_secs = 2
+max_delay_secs = 60
+max_age_secs = 600
+attempt_timeout_secs = 90
+queue_capacity = 256
