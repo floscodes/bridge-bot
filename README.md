@@ -1,37 +1,37 @@
 # bridge-bot
 
-Ein in Rust geschriebener Bridge-Bot, der Textnachrichten zwischen **Telegram**, **Reticulum LXMF** und **Reticulum Relay Chat (RRC)** weiterleitet. Verbinde Gruppen, Forum-Themen, LXMF-Peers und RRC-Räume über ausdrücklich konfigurierte Routen.
+A bridge bot written in Rust that forwards text messages between **Telegram**, **Reticulum LXMF**, and **Reticulum Relay Chat (RRC)**. Connect groups, forum topics, LXMF peers, and RRC rooms through explicitly configured routes.
 
 ```text
 Telegram ↔ bridge-bot ↔ LXMF / RRC
 ```
 
-### Funktionen
+### Features
 
-- Einseitige und bidirektionale Routen, auch mit mehreren Zielen.
-- Explizite Zuordnung von Telegram-Themen zu RRC-Räumen.
-- Eingebauter Reticulum-Stack mit eigenen Interfaces und Identitäten pro Dienst.
-- Mehrere Instanzen desselben Dienstes, etwa verschiedene Telegram-Bots oder RRC-Hubs.
-- Begrenzte Versandwiederholungen im Arbeitsspeicher und Diagnosewerkzeuge.
+- One-way and bidirectional routes, including multiple destinations.
+- Explicit mapping of Telegram topics to RRC rooms.
+- Embedded Reticulum stack with separate interfaces and identities for each service.
+- Multiple instances of the same service, such as different Telegram bots or RRC hubs.
+- Bounded in-memory delivery retries and diagnostic tools.
 
-### Ausblick
+### Future plans
 
-**More services might be added in the future.** Die Adapter-Struktur ermöglicht die Erweiterung um weitere Dienste; aktuell werden Telegram, LXMF und RRC unterstützt.
+**More services might be added in the future.** The adapter structure supports adding further services; Telegram, LXMF, and RRC are currently supported.
 
-Weitergeleitete Nachrichten beginnen mit:
+Forwarded messages start with:
 
 ```text
 Alice wrote via Telegram:
-Hallo!
+Hello!
 ```
 
-## Einrichtung
+## Setup
 
-Voraussetzung ist eine aktuelle stabile Rust-Toolchain mit Unterstützung für die Edition 2024 sowie Zugriff auf die gewünschten Netzwerke.
+You need a current stable Rust toolchain supporting Edition 2024 and access to the networks you want to use.
 
-1. Telegram-Bot bei @BotFather erstellen und sein Token in `bridge-bot.toml` unter `[services.telegram]` als `token` eintragen. Den Bot der gewünschten Gruppe oder dem Kanal hinzufügen. Für Gruppen den Privacy Mode bei BotFather deaktivieren (danach gegebenenfalls neu hinzufügen). Für Kanäle benötigt er Administratorrechte und die Berechtigung, Nachrichten zu veröffentlichen. Private Chats müssen vom Nutzer begonnen werden.
-2. Für LXMF und RRC die gewünschten Reticulum-Interfaces direkt im jeweiligen Dienst konfigurieren. Beide Dienste betreiben ihren eigenen Rust-Reticulum-Stack im Bot-Prozess; eine separate Installation oder ein LXMF-Daemon ist nicht erforderlich.
-3. Die Beispielkonfiguration kopieren und echte Telegram-Chat-IDs, LXMF-Peer-Destination-Hashes und gegebenenfalls RRC-Hub-Adressen einsetzen. Die eigene LXMF-Delivery-Destination wird aus `identity_path` abgeleitet und beim Start geloggt. Die Beispieladressen sind Platzhalter.
+1. Create a Telegram bot through @BotFather and set its token in `bridge-bot.toml` as `token` under `[services.telegram]`. Add the bot to the desired group or channel. For groups, disable Privacy Mode through BotFather and re-add the bot if necessary. For channels, the bot needs administrator rights and permission to publish messages. Users must initiate private chats themselves.
+2. For LXMF and RRC, configure the desired Reticulum interfaces directly in each service. Both services run their own Rust Reticulum stack inside the bot process; no separate installation or LXMF daemon is required.
+3. Copy the example configuration and insert your Telegram chat IDs, LXMF peer destination hashes, and RRC hub addresses if needed. The bot's own LXMF delivery destination is derived from `identity_path` and logged at startup. The example addresses are placeholders.
 
 ```sh
 cp bridge-bot.toml.example bridge-bot.toml
@@ -39,23 +39,23 @@ cargo run -- --check
 cargo run --release
 ```
 
-Die Konfiguration heißt standardmäßig `bridge-bot.toml` und enthält TOML. Ein anderer Pfad ist mit `--config datei.toml` möglich. `--check` validiert ausschließlich die Konfiguration, ohne Dienstverbindungen aufzubauen oder das Token bei Telegram zu prüfen. Die lokale Konfiguration ist in `.gitignore` ausgeschlossen. Das Telegram-Token wird direkt aus dem Feld `token` gelesen. Die optionale `[retry]`-Tabelle steht im Beispiel am Dateiende; ohne sie gelten die dort gezeigten Standardwerte.
+The default configuration file is `bridge-bot.toml`, in TOML format. Use `--config file.toml` to select another path. `--check` only validates the configuration; it does not connect to services or verify the token with Telegram. The local configuration is excluded by `.gitignore`. The Telegram token is read directly from the `token` field. The optional `[retry]` table appears at the end of the example; omitting it uses the defaults shown there.
 
-Mit `cargo run --bin bridge-check` werden Telegram-Anmeldung, Zugriff auf die konfigurierten Gruppen, Forum-Status und Bot-Mitgliedschaft geprüft. Dabei werden keine Nachrichten gesendet oder Telegram-Updates abgeholt; der Token wird nicht ausgegeben. `Receives all group messages: false` bedeutet, dass der Privacy Mode aktiv ist. Als gewöhnliches Gruppenmitglied erhält der Bot dann nicht alle normalen Nachrichten. Bei BotFather `/setprivacy` auf `Disable` setzen und den Bot erneut hinzufügen, oder dem Bot Administratorrechte geben. Ein aktueller Themenname ist für das Routing nicht erforderlich; die konfigurierte `message_thread_id` muss zu einem existierenden Thema gehören.
+Run `cargo run --bin bridge-check` to check Telegram authentication, access to configured groups, forum status, and bot membership. It does not send messages or fetch Telegram updates, and it does not print the token. `Receives all group messages: false` means Privacy Mode is enabled. As an ordinary group member, the bot will then miss some regular messages. Set `/setprivacy` to `Disable` through BotFather and re-add the bot, or grant it administrator rights. Routing does not require the current topic name; the configured `message_thread_id` must refer to an existing topic.
 
-## Schutz lokaler Daten
+## Protecting local data
 
-Veröffentliche ausschließlich `bridge-bot.toml.example` mit Platzhaltern. Die echte `bridge-bot.toml`, Konfigurationskopien, `.env`-Dateien und `.bridge-bot/` mit privaten Reticulum-Identitäten und Netzwerkzustand sind in `.gitignore` ausgeschlossen. Speichere eigene Identitäten ebenfalls unter `.bridge-bot/` und behandle sie wie private Schlüssel. Logs können Chat-Inhalte und Adressen enthalten und gehören nicht ins Repository.
+Publish only `bridge-bot.toml.example` with placeholder values. The real `bridge-bot.toml`, configuration copies, `.env` files, and `.bridge-bot/` containing private Reticulum identities and network state are excluded by `.gitignore`. Store custom identities under `.bridge-bot/` as well and treat them as private keys. Logs may contain chat content and addresses and should stay out of the repository.
 
-## Routen
+## Routes
 
-Mit `cargo run --bin bridge-check -- --rrc` lässt sich zusätzlich der Verbindungsaufbau zu konfigurierten RRC-Hubs samt Raumbeitritt prüfen. Es werden dabei keine Chatnachrichten gesendet. Der optionale Parameter `--rrc-test-message "Testnachricht"` sendet ausdrücklich eine Nachricht in den einzigen konfigurierten RRC-Raum und wartet auf dessen Hub-Echo. Für einen Weiterleitungstest muss gleichzeitig der Bridge-Bot laufen. Der Checker holt keine Telegram-Updates ab und konkurriert daher nicht mit dem Bot-Polling.
+Run `cargo run --bin bridge-check -- --rrc` to also check connections to configured RRC hubs and room joins. This does not send chat messages. The optional `--rrc-test-message "Test message"` argument explicitly sends a message to the single configured RRC room and waits for its hub echo. The bridge bot must be running at the same time to test forwarding. The checker does not fetch Telegram updates, so it does not compete with the bot's polling.
 
-Für Telegram → RRC mit `--rrc --expect-rrc-text TESTMARKER --wait-secs 300` auf einen Marker warten und diesen in das konfigurierte Telegram-Thema schreiben. Bei aktivem Privacy Mode einen direkt adressierten Befehl wie `/bridge_test@BOT_USERNAME TESTMARKER` verwenden. Erst wenn der zweite RRC-Teilnehmer die weitergeleitete Nachricht tatsächlich empfängt, meldet der Checker den Test als bestanden.
+To test Telegram → RRC, wait for a marker with `--rrc --expect-rrc-text TESTMARKER --wait-secs 300` and post that marker in the configured Telegram topic. With Privacy Mode enabled, use a command addressed directly to the bot, such as `/bridge_test@BOT_USERNAME TESTMARKER`. The checker reports success only after the second RRC participant actually receives the forwarded message.
 
-Alle Logmeldungen des Bots erscheinen direkt im Terminal auf Standardausgabe, einschließlich Debug- und Trace-Meldungen. `RUST_LOG` kann zusätzlich Logs der verwendeten Bibliotheken aktivieren; die eigenen Bot-Meldungen bleiben immer sichtbar.
+All bot log messages appear directly in the terminal on standard output, including debug and trace messages. `RUST_LOG` can additionally enable logs from dependencies; the bot's own messages always remain visible.
 
-Dienste und Routen sind optional. Ohne konfigurierte Dienste loggt der Bot `no services registered` und beendet sich erfolgreich. Routen zu nicht konfigurierten Diensten bleiben inaktiv und lösen keine Fehlermeldungen aus. RRC ohne aktive Raumroute wird nicht gestartet. Fehler in ausdrücklich konfigurierten Diensten werden weiterhin gemeldet.
+Services and routes are optional. With no configured services, the bot logs `no services registered` and exits successfully. Routes to unconfigured services remain inactive without producing errors. RRC does not start without an active room route. Errors in explicitly configured services are still reported.
 
 ```toml
 [[bridges]]
@@ -64,13 +64,13 @@ to = { service = "lxmf", chat = "0123456789abcdef0123456789abcdef" }
 bidirectional = true
 ```
 
-`bidirectional = true` aktiviert beide Richtungen; `false` oder ein fehlender Eintrag aktiviert nur `from` → `to`. Mehrere Einträge erlauben mehrere Chats und mehrere Ziele. Gleiche Ziele werden pro Eingang nur einmal bedient. Nur konfigurierte Quell-Chats bzw. LXMF-Absender werden weitergeleitet.
+`bidirectional = true` enables both directions; `false` or an omitted field enables only `from` → `to`. Multiple entries allow multiple chats and destinations. Identical destinations are served only once per incoming message. Only configured source chats or LXMF senders are forwarded.
 
-Dienstnamen sind frei wählbar: Mehrere Telegram-Bots, LXMF-Identitäten oder RRC-Hubs können eigene Einträge unter `[services.NAME]` haben. Bei den Standardnamen `telegram`, `lxmf` und `rrc` wird der Adapter automatisch erkannt; `type` ist dort optional. Eigene Namen wie `[services.telegram_work]` benötigen beispielsweise `type = "telegram"`. Eine explizite Typangabe hat Vorrang vor dem Namen. LXMF-Namen werden in `[services.NAME.usernames]` nach Delivery-Destination zugeordnet; sonst verwendet der Bot den Namen aus der verifizierten Ankündigung oder die Adresse. Telegram nutzt Username, Anzeigename oder Kanalname.
+Service names are configurable: multiple Telegram bots, LXMF identities, or RRC hubs can have their own entries under `[services.NAME]`. The adapter is inferred for the standard names `telegram`, `lxmf`, and `rrc`, where `type` is optional. Custom names such as `[services.telegram_work]` require an explicit type, for example `type = "telegram"`. An explicit type takes precedence over the name. LXMF names are mapped by delivery destination in `[services.NAME.usernames]`; otherwise, the bot uses the name from the verified announce or the address. Telegram uses the username, display name, or channel name.
 
-## Themen und Räume
+## Topics and rooms
 
-Räume werden explizit in `[[bridges]]` zugeordnet. Bei Telegram ist `chat` immer die erforderliche Chat-ID der Gruppe; `message_thread_id` ist zusätzlich die numerische ID des Themas innerhalb dieser Gruppe. Bei RRC wird der Raum ausschließlich im Feld `room` angegeben. Die Namen müssen nicht übereinstimmen:
+Rooms are mapped explicitly in `[[bridges]]`. For Telegram, `chat` is always the required group chat ID; `message_thread_id` is the additional numeric ID of a topic within that group. For RRC, the room is specified exclusively in the `room` field. Names do not need to match:
 
 ```toml
 [[bridges]]
@@ -84,15 +84,15 @@ to = { service = "rrc", room = "#news" }
 bidirectional = true
 ```
 
-Hier gelangen Nachrichten aus Thema 42 ausschließlich nach `#lobby`, aus Thema 57 nach `#news`; die Rückrichtung sendet jeweils in das konfigurierte Telegram-Thema. Für mehrere ausdrückliche Ziele können mehrere Routen mit derselben Quelle angelegt werden. Identische Ziele werden pro Nachricht dedupliziert. Andere Räume werden nicht automatisch ausgewählt.
+Messages from topic 42 go only to `#lobby`, and messages from topic 57 go to `#news`; the reverse direction sends to the corresponding configured Telegram topic. To explicitly target several destinations, add multiple routes with the same source. Identical destinations are deduplicated per message. Other rooms are not selected automatically.
 
-Ohne `message_thread_id` wird in eine normale Telegram-Gruppe ohne Forum-Themen gepostet. Hat die Zielgruppe Themen, ist `message_thread_id` zwingend erforderlich, auch für `General` (`message_thread_id = 1`). Fehlt der Eintrag, protokolliert der Bot einen Fehler und sendet nichts. Umgekehrt ist eine konfigurierte Themen-ID in einer Gruppe ohne Themen ein Fehler. Nachrichten aus einem Telegram-Thema oder RRC-Raum ohne passende Quellroute werden mit einem Fehler protokolliert und nicht weitergeleitet. Ein Telegram-Eintrag ohne `message_thread_id` ist kein Platzhalter für alle Themen.
+Omitting `message_thread_id` targets an ordinary Telegram group without forum topics. If the destination group has topics, `message_thread_id` is required, including for `General` (`message_thread_id = 1`). If it is missing, the bot logs an error and sends nothing. Conversely, specifying a topic ID for a group without topics is an error. Messages from a Telegram topic or RRC room without a matching source route are logged as errors and are not forwarded. A Telegram entry without `message_thread_id` is not a wildcard for all topics.
 
-Themen-IDs bleiben auch bei Umbenennungen unverändert. Der Bot verwendet eingehende [Telegram-`message_thread_id`s](https://core.telegram.org/bots/api#message) direkt; er muss keine Namen lernen. Ist das konfigurierte Ziel geschlossen oder nicht verfügbar, wird die Weiterleitung mit einem Fehler beendet, ohne auf einen anderen Raum auszuweichen. Alle Nachrichtenteile und Versandwiederholungen bleiben im konfigurierten Ziel.
+Topic IDs remain unchanged when topics are renamed. The bot uses incoming [Telegram `message_thread_id` values](https://core.telegram.org/bots/api#message) directly and does not need to learn names. If the configured destination is closed or unavailable, forwarding ends with an error without falling back to another room. All message parts and delivery retries stay within the configured destination.
 
-## Eigene Reticulum-Interfaces pro Dienst
+## Separate Reticulum interfaces per service
 
-`[[services.rrc.interfaces]]` und `[[services.lxmf.interfaces]]` sind unabhängige Listen. Auch mehrere Interfaces pro Dienst sind möglich:
+`[[services.rrc.interfaces]]` and `[[services.lxmf.interfaces]]` are independent lists. Each service can also have multiple interfaces:
 
 ```toml
 [services.lxmf]
@@ -115,27 +115,27 @@ host = "rrc-peer.example.org"
 port = 4242
 ```
 
-Unterstützt sind `tcp_client` mit `host`/`port`, `tcp_server` mit `listen`/`port` und `auto` für IPv6-Peer-Erkennung im lokalen Netzwerk. Für `auto` sind `group_id` (Standard `reticulum`), `discovery_port` (29716), `data_port` (42671) und `devices` (Liste von Netzwerkkarten, standardmäßig keine Einschränkung) optional. Ein AutoInterface allein schafft keine Verbindung zu einem entfernten Netz; dafür wird ein erreichbarer Peer benötigt. TCP-Ports müssen zwischen 1 und 65535 liegen.
+Supported types are `tcp_client` with `host`/`port`, `tcp_server` with `listen`/`port`, and `auto` for IPv6 peer discovery on the local network. For `auto`, optional fields are `group_id` (default: `reticulum`), `discovery_port` (29716), `data_port` (42671), and `devices` (a list of network interfaces, unrestricted by default). An AutoInterface alone does not connect to a remote network; a reachable peer is required. TCP ports must be between 1 and 65535.
 
-Ohne `interfaces` verwendet jeder Dienst ein AutoInterface. `interfaces = []` deaktiviert Netzwerkinterfaces ausdrücklich. Die Instanzen verwenden keine Shared Instance und teilen weder Interfaces noch Routingtabellen. Eigene Konfigurationen für denselben lokalen Listen-Port können kollidieren; insbesondere AutoInterfaces müssen bei Bedarf mit passenden eigenen Ports und Peer-Einstellungen konfiguriert werden.
+If `interfaces` is omitted, each service uses an AutoInterface. `interfaces = []` explicitly disables network interfaces. Instances do not use a shared instance and do not share interfaces or routing tables. Configurations using the same local listening port can conflict; in particular, configure AutoInterfaces with suitable separate ports and peer settings when needed.
 
-Netzwerkzustand wird pro Dienst unter `.bridge-bot/reticulum/managed-<hexkodierter Dienstname>` gespeichert. Das optionale `reticulum_config` bestimmt das übergeordnete Zustandsverzeichnis; Interfaces stammen immer aus der TOML-Datei. Vorhandene externe Reticulum-Konfigurationsdateien werden nicht überschrieben oder automatisch übernommen. Wer vorher Interfaces in einer solchen Datei konfiguriert hat, muss sie in die jeweilige TOML-Liste übertragen.
+Network state is stored per service under `.bridge-bot/reticulum/managed-<hex-encoded service name>`. The optional `reticulum_config` sets the parent state directory; interfaces always come from the TOML file. Existing external Reticulum configuration files are neither overwritten nor imported automatically. If you previously configured interfaces in such a file, move them into the corresponding TOML list.
 
-Bei LXMF ersetzt `identity_path` die bisherigen Felder `rpc_endpoint` und `source`. Eine vorhandene rohe 64-Byte-RNS-Identität kann weiterverwendet werden, um dieselbe Adresse zu behalten. Ohne vorhandene Identität erstellt der Bot eine neue. Die Identitätsdatei muss erhalten bleiben. Eingehende Nachrichten werden vor der Weiterleitung auf Zieladresse, Senderidentität und Signatur geprüft; unbekannte Sender werden über eine Pfadanfrage aufgelöst. Kann die Signatur nicht verifiziert werden, erscheint eine Warnung und die Nachricht wird verworfen.
+For LXMF, `identity_path` replaces the former `rpc_endpoint` and `source` fields. An existing raw 64-byte RNS identity can be reused to retain the same address. If no identity exists, the bot creates one. Preserve the identity file. Incoming messages are checked for destination address, sender identity, and signature before forwarding; unknown senders are resolved through a path request. If the signature cannot be verified, the bot logs a warning and discards the message.
 
-`identity_path` ist optional: Für `services.rrc` gilt `.bridge-bot/rrc-identity`, für `services.lxmf` gilt `.bridge-bot/lxmf-identity`. Existiert die Datei, wird sie geladen; andernfalls wird dort eine neue Identität gespeichert. Ungültige oder nicht lesbare vorhandene Dateien führen zu einem Fehler und werden nicht überschrieben. Eigene Dienstnamen erhalten getrennte Standarddateien unter `.bridge-bot/identity-<hexkodierter Dienstname>`; ein expliziter Pfad hat immer Vorrang.
+`identity_path` is optional: it defaults to `.bridge-bot/rrc-identity` for `services.rrc` and `.bridge-bot/lxmf-identity` for `services.lxmf`. An existing file is loaded; otherwise, a new identity is saved there. Invalid or unreadable existing files cause an error and are not overwritten. Custom service names receive separate default files under `.bridge-bot/identity-<hex-encoded service name>`; an explicit path always takes precedence.
 
-`reticulum-node` bleibt ein optionales eigenständiges Diagnosewerkzeug. Der normale Bot-Betrieb benötigt diesen Prozess nicht. `bridge-check --rrc` betreibt für den zweiten Testteilnehmer ebenfalls einen eigenen eingebauten Stack mit den konfigurierten RRC-Interfaces; ein zusätzliches TCP-Server-Interface sollte dabei nicht denselben Listen-Port wie der Bot verwenden.
+`reticulum-node` remains an optional standalone diagnostic tool. Normal bot operation does not require this process. `bridge-check --rrc` also runs its own embedded stack with the configured RRC interfaces for the second test participant; an additional TCP server interface should not use the same listening port as the bot.
 
-## RRC-Räume
+## RRC rooms
 
-RRC ist ein eigener Live-Chat über identifizierte Reticulum-Links, mit CBOR-Nachrichten an einen `rrc.hub`. Es verwendet keine LXMF-Delivery-Destination. Pro Hub wird ein Dienst konfiguriert; das Feld `room` bezeichnet einen Raum. Pro Dienst wird eine dauerhafte RNS-Identität gespeichert.
+RRC is a separate live chat service over identified Reticulum links, using CBOR messages sent to an `rrc.hub`. It does not use an LXMF delivery destination. Configure one service per hub; the `room` field identifies a room. Each service stores a persistent RNS identity.
 
-Führende `#` im konfigurierten Raumnamen werden entfernt: `room = "#general"` und `room = "general"` verwenden beide den Raum `general`.
+Leading `#` characters are removed from configured room names: `room = "#general"` and `room = "general"` both use the room `general`.
 
 ```toml
 [services.rrc]
-hub = "00000000000000000000000000000003" # echte RRC-Hub-Destination einsetzen
+hub = "00000000000000000000000000000003" # replace with the actual RRC hub destination
 identity_path = ".bridge-bot/rrc-identity"
 nickname = "bridge-bot"
 reticulum_config = ".bridge-bot/reticulum"
@@ -146,53 +146,53 @@ to = { service = "rrc", room = "#lobby" }
 bidirectional = true
 ```
 
-Raumnamen müssen kleingeschrieben sein. Alle in Routen genannten Räume werden nach `WELCOME` betreten; erst nach `JOINED` gilt der Adapter als bereit. Nachrichten (`MSG`) und Aktionen (`ACTION`) werden weitergeleitet, eigene Echos sowie Hub-Notices nicht. Nicknames sind Anzeigehinweise des Hubs, keine verifizierten Identitäten. Lange Texte werden passend zur Link-Paketgröße in mehrere Nachrichten geteilt. Als Versandbestätigung gilt das vom Hub zurückgesendete eigene Nachrichten-Echo mit passender ID, passendem Raum und Text. Das bestätigt die Verarbeitung am Hub, nicht den Empfang bei jedem Raumteilnehmer. Ein Hub muss dazu Nachrichten auch an ihren Sender weiterleiten, wie der Referenz-Hub `rrcd`.
+Room names must be lowercase. All rooms referenced by routes are joined after `WELCOME`; the adapter becomes ready only after `JOINED`. Messages (`MSG`) and actions (`ACTION`) are forwarded, while the bot's own echoes and hub notices are not. Nicknames are display hints supplied by the hub, not verified identities. Long text is split into multiple messages to fit the link packet size. Delivery is acknowledged by the hub echoing the bot's own message with a matching ID, room, and text. This confirms processing at the hub, not receipt by every room participant. The hub must therefore forward messages to their sender as well, as the reference hub `rrcd` does.
 
-RRC und LXMF laufen vollständig im Bot über die Rust-Bibliothek [rsReticulum](https://github.com/ratspeak/rsReticulum), deren Git-Revision festgelegt ist. Jeder Dienst besitzt seinen eigenen Stack mit den im TOML konfigurierten Interfaces.
+RRC and LXMF run entirely inside the bot through the Rust library [rsReticulum](https://github.com/ratspeak/rsReticulum), pinned to a specific Git revision. Each service has its own stack with the interfaces configured in TOML.
 
-Die Identitätsdatei muss über Neustarts hinweg erhalten bleiben; bestehende rohe 64-Byte-RNS-Identitäten können weiterverwendet werden. Für gleichzeitig laufende Instanzen sind getrennte Identitätsdateien zu verwenden. Bei regulärem Herunterfahren verlässt der Bot seine Räume und beendet die Netzwerkinstanz geordnet.
+Preserve the identity file across restarts; existing raw 64-byte RNS identities can be reused. Use separate identity files for instances running concurrently. During normal shutdown, the bot leaves its rooms and shuts down the network instance cleanly.
 
-Bei Link-Abbruch versucht der Adapter mit wachsenden Wartezeiten erneut zu verbinden und die Räume zu betreten. Verweigert der Hub den Beitritt oder entfernt er den Bot aus einem Raum, beendet sich der Bot mit Fehler. Hub-Ratenlimits lösen Versandwiederholungen aus; andere ausdrücklich gemeldete Versandablehnungen beenden die betreffende Weiterleitung. RRC-Nachrichten, die während einer Trennung im Raum entstehen, können nicht nachträglich abgeholt werden. Raum-Passwörter, historische Nachrichten und Resource-Erweiterungen sind noch nicht unterstützt. Protokoll: [RRC-Spezifikation](https://rrc.kc1awv.net/3-RRC-wire-encoding.html).
+If a link drops, the adapter attempts to reconnect and rejoin rooms with increasing delays. If the hub refuses a join or removes the bot from a room, the bot exits with an error. Hub rate limits trigger delivery retries; other explicitly reported send rejections end the affected forwarding operation. RRC messages sent to a room during a disconnection cannot be retrieved afterward. Room passwords, historical messages, and Resource extensions are not yet supported. Protocol: [RRC specification](https://rrc.kc1awv.net/3-RRC-wire-encoding.html).
 
-## Versandwiederholungen
+## Delivery retries
 
-Der Bot führt ausschließlich begrenzte Warteschlangen im Arbeitsspeicher. Nach erfolgreicher Weiterleitung wird der Auftrag verworfen; es gibt keine Nachrichtendatenbank und keine dauerhafte Outbox. Jeder Zielchat hat einen eigenen FIFO-Worker: Ein gestörtes Ziel hält andere Zielchats nicht auf, und später eingegangene Nachrichten überholen keine laufenden Wiederholungen desselben Ziels.
+The bot uses only bounded in-memory queues. After successful forwarding, the job is discarded; there is no message database or persistent outbox. Each destination chat has its own FIFO worker: a failing destination does not block other destination chats, and later messages do not overtake ongoing retries for the same destination.
 
 ```toml
 [retry]
-max_attempts = 6          # erster Versuch plus höchstens fünf Wiederholungen
+max_attempts = 6          # initial attempt plus at most five retries
 initial_delay_secs = 2
 max_delay_secs = 60
-max_age_secs = 600       # gilt ab Aufnahme in die Warteschlange
+max_age_secs = 600       # measured from entry into the queue
 attempt_timeout_secs = 90
-queue_capacity = 256     # wartende Aufträge pro Zielchat
+queue_capacity = 256     # waiting jobs per destination chat
 ```
 
-Alle Angaben sind optional und verwenden diese Standardwerte. Wartezeiten wachsen exponentiell (ungefähr 2, 4, 8, 16, 32 Sekunden) mit bis zu 20 % zusätzlicher Zufallsabweichung, begrenzt durch `max_delay_secs`. Telegram-`retry_after` wird auch dann eingehalten, wenn es über dieser Obergrenze liegt. Nach einem erkennbar dauerhaften Fehler, etwa fehlenden Telegram-Berechtigungen, wird sofort abgebrochen. Wiederholungen und endgültige Fehlschläge werden protokolliert.
+All fields are optional and use these defaults. Delays grow exponentially (roughly 2, 4, 8, 16, and 32 seconds), with up to 20% additional random jitter, capped by `max_delay_secs`. Telegram's `retry_after` is honored even if it exceeds this cap. A clearly permanent error, such as missing Telegram permissions, stops retries immediately. Retries and final failures are logged.
 
-Telegram gilt nach Bestätigung der Bot-API als angenommen. LXMF sendet signierte Nachrichten als Reticulum-Resource über einen direkten verschlüsselten Link und wartet auf dessen Resource-Empfangsbestätigung. Das bestätigt die Übertragung zum Empfänger, nicht eine Anzeige oder das Lesen in dessen Anwendung. Falls der Empfänger einen Delivery-Stamp verlangt, wird dieser erzeugt; beim Zeitablauf wird die Arbeit abgebrochen. Nachrichtentimestamp, Signatur und ID bleiben bei Wiederholungen erhalten. Ein abgebrochener Versuch veranlasst das Schließen seines Links. RRC wartet bis zu 30 Sekunden auf das Hub-Echo und behält die IDs unbestätigter Teile bei Wiederholungen bei. Bereits bestätigte Telegram- und RRC-Teile werden übersprungen.
+Telegram delivery is considered accepted after confirmation from the Bot API. LXMF sends signed messages as Reticulum Resources over a direct encrypted link and waits for the Resource receipt acknowledgment. This confirms transfer to the recipient, not display or reading in their application. If the recipient requires a delivery stamp, it is generated; the work is aborted on timeout. The message timestamp, signature, and ID remain unchanged across retries. An aborted attempt causes its link to close. RRC waits up to 30 seconds for the hub echo and preserves IDs of unconfirmed parts across retries. Already confirmed Telegram and RRC parts are skipped.
 
-Insgesamt sind maximal 4096 Weiterleitungsaufträge mit zusammen 16 MiB ausgehendem Text zugelassen; vorbereitete Paketdaten kommen hinzu. Volle Warteschlangen, erschöpfte Grenzen, Zeitablauf und Herunterfahren führen zum Verwerfen der betreffenden Aufträge und werden protokolliert. Bei verlorener Bestätigung kann ein erneutes Senden trotz erfolgreicher erster Zustellung Duplikate erzeugen; eine Exactly-once-Garantie gibt es nicht. Nach einem Neustart existieren keine gespeicherten Retry-Aufträge.
+At most 4096 forwarding jobs with a combined 16 MiB of outgoing text are allowed; prepared packet data uses additional memory. Full queues, exhausted limits, timeouts, and shutdown cause affected jobs to be discarded and are logged. If an acknowledgment is lost, resending can produce duplicates even when the first delivery succeeded; there is no exactly-once guarantee. No retry jobs survive a restart.
 
-## Aktueller Umfang und Grenzen
+## Current scope and limitations
 
-- Telegram: private Chats, Gruppen, Supergruppen und Kanäle; Text und Medien-Bildunterschriften. Forum-Themen in Supergruppen werden explizit nach Thread-ID geroutet. Lange Texte werden unter Beachtung der UTF-16-Grenze aufgeteilt. Medien selbst, Änderungen, Löschungen, Antwortbeziehungen und Kanal-Kommentarthreads werden noch nicht übertragen.
-- LXMF: Direkter Versand sowie Empfang von direkten Link-Paketen, Resources und opportunistischen Destination-Paketen. Nachrichten sind auf 1 MiB begrenzt. Versand über Propagation Nodes, Tickets, Medien und LXMF-Gruppen-Relay-Protokolle sind noch nicht implementiert. RRC-Räume werden über einen eigenen Adapter unterstützt.
-- Eigene Telegram-Nachrichten, eigene LXMF-Absender und doppelte Eingangs-IDs werden während der Laufzeit ausgefiltert. Die Caches sind begrenzt und nicht dauerhaft. Andere Relay-Bots können Schleifen verursachen; mehrere Bridges sollten keine zyklische Relay-Kette bilden.
-- Telegram-Polling versucht nach Verbindungsfehlern erneut zu verbinden; TCP-Client-Interfaces werden durch den eingebauten Stack erneut verbunden. Versandfehler werden gemäß `[retry]` im Arbeitsspeicher erneut versucht; eine dauerhafte Outbox ist nicht vorgesehen.
-- LXMF empfängt nur während der Laufzeit; es gibt keinen Nachrichtenabruf nach einem Neustart. Telegram nutzt Long Polling: Für denselben Bot darf kein anderer Poller oder Webhook aktiv sein.
+- Telegram: private chats, groups, supergroups, and channels; text and media captions. Forum topics in supergroups are explicitly routed by thread ID. Long text is split according to the UTF-16 limit. Media files, edits, deletions, reply relationships, and channel comment threads are not yet forwarded.
+- LXMF: direct delivery and receipt of direct link packets, Resources, and opportunistic destination packets. Messages are limited to 1 MiB. Sending through propagation nodes, tickets, media, and LXMF group relay protocols are not yet implemented. RRC rooms are supported through a separate adapter.
+- The bot's own Telegram messages, its own LXMF senders, and duplicate incoming IDs are filtered during runtime. Caches are bounded and do not persist. Other relay bots can cause loops; multiple bridges should not form a cyclic relay chain.
+- Telegram polling reconnects after connection errors; TCP client interfaces are reconnected by the embedded stack. Delivery failures are retried in memory according to `[retry]`; there is no persistent outbox.
+- LXMF receives only while the bot is running; messages are not fetched after a restart. Telegram uses long polling: no other poller or webhook may be active for the same bot.
 
-## Entwicklung
+## Development
 
 ```sh
 cargo fmt --check
 cargo test
 cargo clippy --all-targets -- -D warnings
 
-# Rust-RRC-Integrationstest über lokale TCP-Interfaces:
+# Rust RRC integration test over local TCP interfaces:
 cargo test native_rrc
 ```
 
-`src/config.rs` validiert Dienste und Routen. `src/services/mod.rs` definiert das gemeinsame Eingangsformat und den `Adapter`-Trait. Neue Dienste implementieren `receive` und `send` und ergänzen die Dienstkonfiguration und Adapter-Erstellung. Der Routing-Code benötigt dafür keine dienstspezifischen Änderungen.
+`src/config.rs` validates services and routes. `src/services/mod.rs` defines the common incoming message format and the `Adapter` trait. New services implement `receive` and `send` and extend the service configuration and adapter creation. The routing code does not require service-specific changes.
 
-Bibliotheken: [teloxide 0.17](https://docs.rs/teloxide/0.17.0/teloxide/), [lxmf-wire 0.13](https://crates.io/crates/lxmf-wire) für das LXMF-Nachrichtenformat und [rsReticulum](https://github.com/ratspeak/rsReticulum) für den Netzwerkstack. rsReticulum verwendet AGPL-3.0-or-later, LXMF-rs EPL-2.0 oder GPL-2.0-or-later; ihre Lizenzbedingungen sind bei einer Veröffentlichung zu berücksichtigen.
+Libraries: [teloxide 0.17](https://docs.rs/teloxide/0.17.0/teloxide/), [lxmf-wire 0.13](https://crates.io/crates/lxmf-wire) for the LXMF message format, and [rsReticulum](https://github.com/ratspeak/rsReticulum) for the network stack. rsReticulum uses AGPL-3.0-or-later; LXMF-rs uses EPL-2.0 or GPL-2.0-or-later. Observe their license terms when distributing the software.
