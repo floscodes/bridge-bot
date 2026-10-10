@@ -43,10 +43,6 @@ The default configuration file is `bridge-bot.toml`, in TOML format. Use `--conf
 
 Run `cargo run --bin bridge-check` to check Telegram authentication, access to configured groups, forum status, and bot membership. It does not send messages or fetch Telegram updates, and it does not print the token. `Receives all group messages: false` means Privacy Mode is enabled. As an ordinary group member, the bot will then miss some regular messages. Set `/setprivacy` to `Disable` through BotFather and re-add the bot, or grant it administrator rights. Routing does not require the current topic name; the configured `message_thread_id` must refer to an existing topic.
 
-## Protecting local data
-
-Publish only `bridge-bot.toml.example` with placeholder values. The real `bridge-bot.toml`, configuration copies, `.env` files, and `.bridge-bot/` containing private Reticulum identities and network state are excluded by `.gitignore`. Store custom identities under `.bridge-bot/` as well and treat them as private keys. Logs may contain chat content and addresses and should stay out of the repository.
-
 ## Routes
 
 Run `cargo run --bin bridge-check -- --rrc` to also check connections to configured RRC hubs and room joins. This does not send chat messages. The optional `--rrc-test-message "Test message"` argument explicitly sends a message to the single configured RRC room and waits for its hub echo. The bridge bot must be running at the same time to test forwarding. The checker does not fetch Telegram updates, so it does not compete with the bot's polling.
