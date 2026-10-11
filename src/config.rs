@@ -110,8 +110,6 @@ pub enum Service {
         reticulum_config: Option<String>,
         #[serde(default = "default_interfaces")]
         interfaces: Vec<ReticulumInterface>,
-        #[serde(default)]
-        usernames: HashMap<String, String>,
     },
 }
 fn default_rrc_identity() -> String {
@@ -234,7 +232,6 @@ impl Config {
                     display_name,
                     interfaces,
                     reticulum_config,
-                    usernames,
                 } => {
                     ensure!(
                         !identity_path.trim().is_empty(),
@@ -247,9 +244,6 @@ impl Config {
                         "LXMF display_name must be 1–128 bytes without control characters"
                     );
                     validate_network(interfaces, reticulum_config.as_deref())?;
-                    for hash in usernames.keys() {
-                        validate_hash(hash)?;
-                    }
                 }
             }
         }

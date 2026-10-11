@@ -83,7 +83,6 @@ async fn native_lxmf_independent_interfaces_signed_resources_and_retry_identity(
                 client.clone(),
                 alice_path.to_str().unwrap(),
                 "Alice",
-                HashMap::new(),
             )
             .await?,
         );
@@ -93,7 +92,6 @@ async fn native_lxmf_independent_interfaces_signed_resources_and_retry_identity(
                 server.clone(),
                 bob_path.to_str().unwrap(),
                 "Bob",
-                HashMap::new(),
             )
             .await?,
         );

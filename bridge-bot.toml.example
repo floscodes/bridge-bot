@@ -13,9 +13,6 @@ display_name = "bridge-bot"
 type = "auto"
 # For a TCP connection instead, use type = "tcp_client", host = "your-peer", port = 4242.
 
-[services.lxmf.usernames]
-"00000000000000000000000000000002" = "Alice"
-
 [[bridges]]
 from = { service = "telegram", chat = "-1001234567890" }
 to = { service = "lxmf", chat = "00000000000000000000000000000002" }

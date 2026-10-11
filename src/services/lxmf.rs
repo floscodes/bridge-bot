@@ -4,7 +4,6 @@ use anyhow::{Context, bail, ensure};
 use lxmf_core::{Payload, WireMessage};
 use rns_runtime::prelude::*;
 use std::{
-    collections::HashMap,
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -19,7 +18,6 @@ pub struct Lxmf {
     pub name: String,
     pub source: [u8; 16],
     identity: Identity,
-    usernames: HashMap<String, String>,
     network: Arc<Network>,
     destination: Mutex<Option<RegisteredDestination>>,
 }
@@ -30,7 +28,6 @@ impl Lxmf {
         network: Arc<Network>,
         identity_path: &str,
         display_name: &str,
-        usernames: HashMap<String, String>,
     ) -> Result<Self> {
         let identity = load_identity(identity_path)?;
         let app_data = lxmf_core::announce::encode_delivery_display_name_app_data(display_name)?;
@@ -60,7 +57,6 @@ impl Lxmf {
             name,
             source,
             identity,
-            usernames,
             network,
             destination: Mutex::new(Some(destination)),
         })
@@ -113,12 +109,8 @@ impl Lxmf {
             return Ok(None);
         }
         let source = hex::encode(message.source);
-        let mut username = self
-            .usernames
-            .get(&source)
-            .cloned()
-            .or_else(|| lxmf_core::display_name_from_app_data(recalled.app_data.as_deref()))
-            .unwrap_or_default();
+        let mut username =
+            lxmf_core::display_name_from_app_data(recalled.app_data.as_deref()).unwrap_or_default();
         let source_head = source.get(..4).unwrap_or_default();
         let source_tail = source
             .get(source.len() - 2..source.len())

@@ -51,8 +51,6 @@ Run `cargo run --bin bridge-check` to check Telegram authentication, access to c
 
 Run `cargo run --bin bridge-check -- --rrc` to also check connections to configured RRC hubs and room joins. This does not send chat messages. The optional `--rrc-test-message "Test message"` argument explicitly sends a message to the single configured RRC room and waits for its hub echo. The bridge bot must be running at the same time to test forwarding. The checker does not fetch Telegram updates, so it does not compete with the bot's polling.
 
-To test Telegram → RRC, wait for a marker with `--rrc --expect-rrc-text TESTMARKER --wait-secs 300` and post that marker in the configured Telegram topic. With Privacy Mode enabled, use a command addressed directly to the bot, such as `/bridge_test@BOT_USERNAME TESTMARKER`. The checker reports success only after the second RRC participant actually receives the forwarded message.
-
 All bot log messages appear directly in the terminal on standard output, including debug and trace messages. `RUST_LOG` can additionally enable logs from dependencies; the bot's own messages always remain visible.
 
 Services and routes are optional. With no configured services, the bot logs `no services registered` and exits successfully. Routes to unconfigured services remain inactive without producing errors. RRC does not start without an active room route. Errors in explicitly configured services are still reported.
@@ -66,7 +64,7 @@ bidirectional = true
 
 `bidirectional = true` enables both directions; `false` or an omitted field enables only `from` → `to`. Multiple entries allow multiple chats and destinations. Identical destinations are served only once per incoming message. Only configured source chats or LXMF senders are forwarded.
 
-Service names are configurable: multiple Telegram bots, LXMF identities, or RRC hubs can have their own entries under `[services.NAME]`. The adapter is inferred for the standard names `telegram`, `lxmf`, and `rrc`, where `type` is optional. Custom names such as `[services.telegram_work]` require an explicit type, for example `type = "telegram"`. An explicit type takes precedence over the name. LXMF names are mapped by delivery destination in `[services.NAME.usernames]`; otherwise, the bot uses the name from the verified announce or the address. Telegram uses the username, display name, or channel name.
+Service names are configurable: multiple Telegram bots, LXMF identities, or RRC hubs can have their own entries under `[services.NAME]`. The adapter is inferred for the standard names `telegram`, `lxmf`, and `rrc`, where `type` is optional. Custom names such as `[services.telegram_work]` require an explicit type, for example `type = "telegram"`. An explicit type takes precedence over the name. LXMF uses the name from the verified announce and appends the shortened delivery address. Telegram uses the username, display name, or channel name.
 
 ## Topics and rooms
 
@@ -115,17 +113,12 @@ host = "rrc-peer.example.org"
 port = 4242
 ```
 
-Supported types are `tcp_client` with `host`/`port`, `tcp_server` with `listen`/`port`, and `auto` for IPv6 peer discovery on the local network. For `auto`, optional fields are `group_id` (default: `reticulum`), `discovery_port` (29716), `data_port` (42671), and `devices` (a list of network interfaces, unrestricted by default). An AutoInterface alone does not connect to a remote network; a reachable peer is required. TCP ports must be between 1 and 65535.
+Supported types are `tcp_client` with `host`/`port`, `tcp_server` with `listen`/`port`, and `auto` for IPv6 peer discovery on the local network. For `auto`, optional fields are `group_id` (default: `reticulum`), `discovery_port` (29716), `data_port` (42671), and `devices` (a list of network interfaces, unrestricted by default). An AutoInterface alone does not connect to a remote network; a reachable peer is required.
 
 If `interfaces` is omitted, each service uses an AutoInterface. `interfaces = []` explicitly disables network interfaces. Instances do not use a shared instance and do not share interfaces or routing tables. Configurations using the same local listening port can conflict; in particular, configure AutoInterfaces with suitable separate ports and peer settings when needed.
 
-Network state is stored per service under `.bridge-bot/reticulum/managed-<hex-encoded service name>`. The optional `reticulum_config` sets the parent state directory; interfaces always come from the TOML file. Existing external Reticulum configuration files are neither overwritten nor imported automatically. If you previously configured interfaces in such a file, move them into the corresponding TOML list.
-
-For LXMF, `identity_path` replaces the former `rpc_endpoint` and `source` fields. An existing raw 64-byte RNS identity can be reused to retain the same address. If no identity exists, the bot creates one. Preserve the identity file. Incoming messages are checked for destination address, sender identity, and signature before forwarding; unknown senders are resolved through a path request. If the signature cannot be verified, the bot logs a warning and discards the message.
-
 `identity_path` is optional: it defaults to `.bridge-bot/rrc-identity` for `services.rrc` and `.bridge-bot/lxmf-identity` for `services.lxmf`. An existing file is loaded; otherwise, a new identity is saved there. Invalid or unreadable existing files cause an error and are not overwritten. Custom service names receive separate default files under `.bridge-bot/identity-<hex-encoded service name>`; an explicit path always takes precedence.
 
-`reticulum-node` remains an optional standalone diagnostic tool. Normal bot operation does not require this process. `bridge-check --rrc` also runs its own embedded stack with the configured RRC interfaces for the second test participant; an additional TCP server interface should not use the same listening port as the bot.
 
 ## RRC rooms
 
@@ -146,17 +139,13 @@ to = { service = "rrc", room = "#lobby" }
 bidirectional = true
 ```
 
-Room names must be lowercase. All rooms referenced by routes are joined after `WELCOME`; the adapter becomes ready only after `JOINED`. Messages (`MSG`) and actions (`ACTION`) are forwarded, while the bot's own echoes and hub notices are not. Nicknames are display hints supplied by the hub, not verified identities. Long text is split into multiple messages to fit the link packet size. Delivery is acknowledged by the hub echoing the bot's own message with a matching ID, room, and text. This confirms processing at the hub, not receipt by every room participant. The hub must therefore forward messages to their sender as well, as the reference hub `rrcd` does.
+Room names must be lowercase.
 
 RRC and LXMF run entirely inside the bot through the Rust library [rsReticulum](https://github.com/ratspeak/rsReticulum), pinned to a specific Git revision. Each service has its own stack with the interfaces configured in TOML.
 
 Preserve the identity file across restarts; existing raw 64-byte RNS identities can be reused. Use separate identity files for instances running concurrently. During normal shutdown, the bot leaves its rooms and shuts down the network instance cleanly.
 
-If a link drops, the adapter attempts to reconnect and rejoin rooms with increasing delays. If the hub refuses a join or removes the bot from a room, the bot exits with an error. Hub rate limits trigger delivery retries; other explicitly reported send rejections end the affected forwarding operation. RRC messages sent to a room during a disconnection cannot be retrieved afterward. Room passwords, historical messages, and Resource extensions are not yet supported. Protocol: [RRC specification](https://rrc.kc1awv.net/3-RRC-wire-encoding.html).
-
 ## Delivery retries
-
-The bot uses only bounded in-memory queues. After successful forwarding, the job is discarded; there is no message database or persistent outbox. Each destination chat has its own FIFO worker: a failing destination does not block other destination chats, and later messages do not overtake ongoing retries for the same destination.
 
 ```toml
 [retry]

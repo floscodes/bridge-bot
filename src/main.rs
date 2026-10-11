@@ -105,7 +105,6 @@ async fn main() -> Result<()> {
                 display_name,
                 reticulum_config,
                 interfaces,
-                usernames,
             } => {
                 let network = services::reticulum::Network::start_service(
                     name,
@@ -120,7 +119,6 @@ async fn main() -> Result<()> {
                         network,
                         identity_path,
                         display_name,
-                        usernames.clone(),
                     )
                     .await?,
                 )
