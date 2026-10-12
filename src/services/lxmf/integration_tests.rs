@@ -115,11 +115,15 @@ async fn native_lxmf_independent_interfaces_signed_resources_and_retry_identity(
         assert!(!received.origin.lxmf_group);
         let mut configured_source = received.origin.clone();
         configured_source.lxmf_group = true;
-        let group_incoming = received.for_route(&configured_source);
-        assert!(group_incoming.username.is_empty());
+        let mut group_incoming = received.clone();
+        group_incoming.origin = configured_source;
+        assert_eq!(group_incoming.username, received.username);
         assert!(group_incoming.origin.lxmf_group);
-        assert_eq!(group_incoming.formatted(), delivery.text);
-        let direct_incoming = received.for_route(&received.origin);
+        assert_eq!(
+            group_incoming.formatted(),
+            format!("Message via LXMF:\n------\n{}", delivery.text)
+        );
+        let direct_incoming = received.clone();
         assert_eq!(direct_incoming.username, received.username);
         assert_eq!(direct_incoming.formatted(), received.formatted());
         assert_eq!(received.origin.chat, hex::encode(alice.source));

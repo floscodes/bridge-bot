@@ -13,8 +13,11 @@ display_name = "bridge-bot"
 type = "auto"
 # For a TCP connection instead, use type = "tcp_client", host = "your-peer", port = 4242.
 
+# This table defines the bridges.
+# The lxmf_group attribute will only be taken into account if the bridge handles at least one LXMF endpoint.
+# If set to true, the LXMF address and name of the bot itself will not be shown in forwarded messages.
 [[bridges]]
-from = { service = "telegram", chat = "-1001234567890", lxmf_group = false }
+from = { service = "telegram", chat = "-1001234567890"}
 to = { service = "lxmf", chat = "00000000000000000000000000000002", lxmf_group = false }
 bidirectional = true
 

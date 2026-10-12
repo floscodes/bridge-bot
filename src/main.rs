@@ -167,7 +167,8 @@ async fn main() -> Result<()> {
                     let mut queued = HashSet::new();
                     for (source, destination) in config.routes_from(&message.origin) {
                         if !queued.insert(destination.clone()) { continue; }
-                        let incoming = message.for_route(source);
+                        let mut incoming = message.clone();
+                        incoming.origin = source.clone();
                         let text = incoming.formatted();
                         if let Err(error) = forwarder.enqueue(&destination, &text) {
                             tracing::error!(service = %destination.service, chat = %destination.chat, room = ?destination.room, message_thread_id = ?destination.message_thread_id, %error, "Forwarding queue rejected message");
