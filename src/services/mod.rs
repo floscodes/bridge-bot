@@ -61,7 +61,10 @@ pub struct Incoming {
 impl Incoming {
     pub fn formatted(&self) -> String {
         if self.service_label == "LXMF" && self.origin.lxmf_group {
-            return format!("Message via {}:\n------\n{}", self.service_label, self.text);
+            return format!(
+                "Message via {}-Group:\n------\n{}",
+                self.service_label, self.text
+            );
         }
 
         let username: String = self.username.chars().filter(|c| !c.is_control()).collect();

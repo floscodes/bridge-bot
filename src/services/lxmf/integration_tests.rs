@@ -121,7 +121,7 @@ async fn native_lxmf_independent_interfaces_signed_resources_and_retry_identity(
         assert!(group_incoming.origin.lxmf_group);
         assert_eq!(
             group_incoming.formatted(),
-            format!("Message via LXMF:\n------\n{}", delivery.text)
+            format!("Message via LXMF-Group:\n------\n{}", delivery.text)
         );
         let direct_incoming = received.clone();
         assert_eq!(direct_incoming.username, received.username);
