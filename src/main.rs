@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use bridge_bot::{config, retry, services};
+use bridge_bot::{config, forwarding, services};
 use clap::Parser;
 use config::{Config, Service};
 use services::{Adapter, Incoming};
@@ -138,7 +138,7 @@ async fn main() -> Result<()> {
         tasks.spawn(async move { adapter.receive(tx).await });
     }
     drop(tx);
-    let forwarder = retry::Forwarder::start(&config, &adapters, &mut tasks);
+    let forwarder = forwarding::Forwarder::start(&config, &adapters, &mut tasks);
     let mut seen = HashSet::new();
     let mut order = VecDeque::new();
     tracing::info!("Bridge running");

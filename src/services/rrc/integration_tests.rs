@@ -291,7 +291,7 @@ async fn native_rrc_links_rooms_echoes_and_reconnect() -> Result<()> {
             chat: String::new(),
         };
         assert!(
-            crate::retry::forward(
+            crate::forwarding::forward(
                 bridge.as_ref(),
                 &target,
                 &mut delivery,
