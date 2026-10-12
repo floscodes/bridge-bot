@@ -49,6 +49,7 @@ impl fmt::Display for SendFailure {
 }
 impl std::error::Error for SendFailure {}
 
+#[derive(Clone)]
 pub struct Incoming {
     pub origin: Endpoint,
     pub id: String,
@@ -58,7 +59,18 @@ pub struct Incoming {
 }
 
 impl Incoming {
+    pub fn for_route(&self, configured_source: &Endpoint) -> Self {
+        let mut incoming = self.clone();
+        incoming.origin = configured_source.clone();
+        if incoming.service_label == "LXMF" && configured_source.lxmf_group {
+            incoming.username.clear();
+        }
+        incoming
+    }
     pub fn formatted(&self) -> String {
+        if self.service_label == "LXMF" && self.origin.lxmf_group {
+            return self.text.clone();
+        }
         let username: String = self.username.chars().filter(|c| !c.is_control()).collect();
         format!(
             "{username} wrote via {}:\n------\n{}",

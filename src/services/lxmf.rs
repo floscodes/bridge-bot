@@ -109,19 +109,16 @@ impl Lxmf {
             return Ok(None);
         }
         let source = hex::encode(message.source);
-        let mut username =
+        let display_name =
             lxmf_core::display_name_from_app_data(recalled.app_data.as_deref()).unwrap_or_default();
-        let source_head = source.get(..4).unwrap_or_default();
-        let source_tail = source
-            .get(source.len() - 2..source.len())
-            .unwrap_or_default();
-        username.push_str(" [");
-        username.push_str(source_head);
-        username.push_str("..");
-        username.push_str(source_tail);
-        username.push(']');
+        let username = format!(
+            "{display_name} [{}..{}]",
+            &source[..4],
+            &source[source.len() - 2..]
+        );
         Ok(Some(Incoming {
             origin: Endpoint {
+                lxmf_group: false,
                 service: self.name.clone(),
                 chat: source,
                 room: None,

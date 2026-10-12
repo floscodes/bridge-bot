@@ -14,8 +14,8 @@ type = "auto"
 # For a TCP connection instead, use type = "tcp_client", host = "your-peer", port = 4242.
 
 [[bridges]]
-from = { service = "telegram", chat = "-1001234567890" }
-to = { service = "lxmf", chat = "00000000000000000000000000000002" }
+from = { service = "telegram", chat = "-1001234567890", lxmf_group = false }
+to = { service = "lxmf", chat = "00000000000000000000000000000002", lxmf_group = false }
 bidirectional = true
 
 # Add further [[bridges]] entries for other chats or peers.
@@ -37,9 +37,9 @@ bidirectional = true
 # port = 4242
 #
 # [[bridges]]
-# from = { service = "telegram", chat = "-1001234567890", message_thread_id = 42 }
+# from = { service = "telegram", chat = "-1001234567890", message_thread_id = 42, lxmf_group = false }
 # Leading # characters in room names are removed automatically (#lobby becomes lobby).
-# to = { service = "rrc", room = "#lobby" }
+# to = { service = "rrc", room = "#lobby", lxmf_group = false }
 # bidirectional = true
 
 # message_thread_id identifies the topic within the required Telegram chat. For General, explicitly use message_thread_id = 1.

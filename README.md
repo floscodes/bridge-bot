@@ -57,8 +57,8 @@ Services and routes are optional. With no configured services, the bot logs `no 
 
 ```toml
 [[bridges]]
-from = { service = "telegram", chat = "-1001234567890" }
-to = { service = "lxmf", chat = "0123456789abcdef0123456789abcdef" }
+from = { service = "telegram", chat = "-1001234567890", lxmf_group = false }
+to = { service = "lxmf", chat = "0123456789abcdef0123456789abcdef", lxmf_group = false }
 bidirectional = true
 ```
 
@@ -66,19 +66,21 @@ bidirectional = true
 
 Service names are configurable: multiple Telegram bots, LXMF identities, or RRC hubs can have their own entries under `[services.NAME]`. The adapter is inferred for the standard names `telegram`, `lxmf`, and `rrc`, where `type` is optional. Custom names such as `[services.telegram_work]` require an explicit type, for example `type = "telegram"`. An explicit type takes precedence over the name. LXMF uses the name from the verified announce and appends the shortened delivery address. Telegram uses the username, display name, or channel name.
 
+For an LXMF endpoint, `lxmf_group = true` in `bridge-bot.toml` marks that address as a group. Incoming messages from that address are forwarded with their original text, without an added username, service header, or separator. With `false` (the default), the verified display name and shortened address are included as before.
+
 ## Topics and rooms
 
 Rooms are mapped explicitly in `[[bridges]]`. For Telegram, `chat` is always the required group chat ID; `message_thread_id` is the additional numeric ID of a topic within that group. For RRC, the room is specified exclusively in the `room` field. Names do not need to match:
 
 ```toml
 [[bridges]]
-from = { service = "telegram", chat = "-1001234567890", message_thread_id = 42 }
-to = { service = "rrc", room = "#lobby" }
+from = { service = "telegram", chat = "-1001234567890", message_thread_id = 42, lxmf_group = false }
+to = { service = "rrc", room = "#lobby", lxmf_group = false }
 bidirectional = true
 
 [[bridges]]
-from = { service = "telegram", chat = "-1001234567890", message_thread_id = 57 }
-to = { service = "rrc", room = "#news" }
+from = { service = "telegram", chat = "-1001234567890", message_thread_id = 57, lxmf_group = false }
+to = { service = "rrc", room = "#news", lxmf_group = false }
 bidirectional = true
 ```
 
@@ -134,8 +136,8 @@ nickname = "bridge-bot"
 reticulum_config = ".bridge-bot/reticulum"
 
 [[bridges]]
-from = { service = "telegram", chat = "-1001234567890" }
-to = { service = "rrc", room = "#lobby" }
+from = { service = "telegram", chat = "-1001234567890", lxmf_group = false }
+to = { service = "rrc", room = "#lobby", lxmf_group = false }
 bidirectional = true
 ```
 

@@ -226,6 +226,7 @@ mod tests {
     }
     fn destination() -> Endpoint {
         Endpoint {
+            lxmf_group: false,
             message_thread_id: None,
             room: None,
             service: "mock".into(),
@@ -339,8 +340,8 @@ mod tests {
             type = "telegram"
             token = "TOKEN"
             [[bridges]]
-            from = { service = "mock", chat = "99" }
-            to = { service = "mock", chat = "1" }
+            from = { service = "mock", chat = "99", lxmf_group = false }
+            to = { service = "mock", chat = "1", lxmf_group = false }
         "#,
         )
         .unwrap();

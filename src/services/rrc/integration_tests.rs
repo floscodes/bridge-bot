@@ -284,6 +284,7 @@ async fn native_rrc_links_rooms_echoes_and_reconnect() -> Result<()> {
         let retry_text = "retry after disconnect 🌍 ".repeat(70);
         let mut delivery = Delivery::new(retry_text.clone());
         let target = Endpoint {
+            lxmf_group: false,
             message_thread_id: None,
             room: Some("#other".into()),
             service: "bridge".into(),

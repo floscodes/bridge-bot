@@ -112,6 +112,16 @@ async fn native_lxmf_independent_interfaces_signed_resources_and_retry_identity(
             received.username,
             format!("Alice [{}..{}]", &source[..4], &source[source.len() - 2..])
         );
+        assert!(!received.origin.lxmf_group);
+        let mut configured_source = received.origin.clone();
+        configured_source.lxmf_group = true;
+        let group_incoming = received.for_route(&configured_source);
+        assert!(group_incoming.username.is_empty());
+        assert!(group_incoming.origin.lxmf_group);
+        assert_eq!(group_incoming.formatted(), delivery.text);
+        let direct_incoming = received.for_route(&received.origin);
+        assert_eq!(direct_incoming.username, received.username);
+        assert_eq!(direct_incoming.formatted(), received.formatted());
         assert_eq!(received.origin.chat, hex::encode(alice.source));
         assert_eq!(Some(received.id.clone()), delivery.transport_id);
         assert!(isolated.handle.recall(bob.source).await?.is_none());
@@ -120,7 +130,18 @@ async fn native_lxmf_independent_interfaces_signed_resources_and_retry_identity(
         assert_eq!(next(&mut bob_rx).await?.id, received.id);
         assert_eq!(delivery.frames, frames);
         bob.send(&hex::encode(alice.source), "Antwort").await?;
-        assert_eq!(next(&mut alice_rx).await?.text, "Antwort");
+        let reply = next(&mut alice_rx).await?;
+        assert_eq!(reply.text, "Antwort");
+        let source = hex::encode(bob.source);
+        assert_eq!(
+            reply.username,
+            format!("Bob [{}..{}]", &source[..4], &source[source.len() - 2..])
+        );
+        assert!(!reply.origin.lxmf_group);
+        assert_eq!(
+            reply.formatted(),
+            format!("{} wrote via LXMF:\n------\nAntwort", reply.username)
+        );
         let mut invalid = frames.unwrap()[0].clone();
         invalid[32] ^= 1;
         assert!(bob.decode(&invalid).await.is_err());

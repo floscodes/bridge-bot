@@ -149,6 +149,8 @@ pub struct Endpoint {
     pub message_thread_id: Option<i32>,
     #[serde(default, deserialize_with = "deserialize_room")]
     pub room: Option<String>,
+    #[serde(default)]
+    pub lxmf_group: bool,
 }
 fn deserialize_room<'de, D>(deserializer: D) -> std::result::Result<Option<String>, D::Error>
 where
@@ -166,6 +168,12 @@ pub struct Bridge {
     pub bidirectional: bool,
 }
 impl Endpoint {
+    fn matches_source(&self, source: &Self) -> bool {
+        self.service == source.service
+            && self.chat == source.chat
+            && self.room == source.room
+            && self.message_thread_id == source.message_thread_id
+    }
     pub fn address(&self) -> &str {
         self.room.as_deref().unwrap_or(&self.chat)
     }
@@ -301,19 +309,25 @@ impl Config {
         }
         Ok(())
     }
+    pub fn routes_from<'a>(
+        &'a self,
+        source: &'a Endpoint,
+    ) -> impl Iterator<Item = (&'a Endpoint, &'a Endpoint)> + 'a {
+        self.active_bridges().filter_map(move |bridge| {
+            if bridge.from.matches_source(source) {
+                Some((&bridge.from, &bridge.to))
+            } else if bridge.bidirectional && bridge.to.matches_source(source) {
+                Some((&bridge.to, &bridge.from))
+            } else {
+                None
+            }
+        })
+    }
     pub fn destinations(&self, source: &Endpoint) -> Vec<Endpoint> {
         let mut seen = HashSet::new();
-        self.active_bridges()
-            .filter_map(|b| {
-                if &b.from == source {
-                    Some(b.to.clone())
-                } else if b.bidirectional && &b.to == source {
-                    Some(b.from.clone())
-                } else {
-                    None
-                }
-            })
-            .filter(|e| seen.insert(e.clone()))
+        self.routes_from(source)
+            .map(|(_, destination)| destination.clone())
+            .filter(|endpoint| seen.insert(endpoint.clone()))
             .collect()
     }
     pub fn active_bridges(&self) -> impl Iterator<Item = &Bridge> {
@@ -324,7 +338,8 @@ impl Config {
     }
     pub fn has_inactive_route(&self, source: &Endpoint) -> bool {
         self.bridges.iter().any(|bridge| {
-            (&bridge.from == source || (bridge.bidirectional && &bridge.to == source))
+            (bridge.from.matches_source(source)
+                || (bridge.bidirectional && bridge.to.matches_source(source)))
                 && (!self.services.contains_key(&bridge.from.service)
                     || !self.services.contains_key(&bridge.to.service))
         })
@@ -432,10 +447,10 @@ mod tests {
         );
         c.bridges = vec![Bridge {
             from: toml::from_str(
-                "service = 'telegram'\nchat = '-1001234567890'\nmessage_thread_id = 2\n",
+                "service = 'telegram'\nlxmf_group = false\nchat = '-1001234567890'\nmessage_thread_id = 2\n",
             )
             .unwrap(),
-            to: toml::from_str("service = 'rrc'\nroom = '#lobby'\n").unwrap(),
+            to: toml::from_str("service = 'rrc'\nlxmf_group = false\nroom = '#lobby'\n").unwrap(),
             bidirectional: true,
         }];
         c.validate().unwrap();
@@ -455,8 +470,10 @@ mod tests {
         c.bridges[0].to.room = None;
         assert!(c.validate().is_err());
         assert!(
-            toml::from_str::<Endpoint>("service = 'telegram'\nchat = '-1001234567890'\nroom = 2\n")
-                .is_err()
+            toml::from_str::<Endpoint>(
+                "service = 'telegram'\nlxmf_group = false\nchat = '-1001234567890'\nroom = 2\n"
+            )
+            .is_err()
         );
     }
     #[test]
@@ -473,12 +490,14 @@ mod tests {
             },
         );
         let topic = |message_thread_id| Endpoint {
+            lxmf_group: false,
             service: "telegram".into(),
             chat: "-100123".into(),
             message_thread_id,
             room: None,
         };
         let rrc = |name: &str| Endpoint {
+            lxmf_group: false,
             service: "rrc".into(),
             chat: String::new(),
             message_thread_id: None,
@@ -605,8 +624,8 @@ mod tests {
             identity_path = ".bridge-bot/rrc-identity"
             nickname = "bridge-bot"
             [[bridges]]
-            from = { service = "telegram", chat = "-1001234567890" }
-            to = { service = "rrc", room = "#lobby" }
+            from = { service = "telegram", chat = "-1001234567890", lxmf_group = false }
+            to = { service = "rrc", room = "#lobby", lxmf_group = false }
             bidirectional = true
         "##,
         )
@@ -639,8 +658,10 @@ mod tests {
         );
         let telegram = c.bridges[0].from.clone();
         for configured in ["general", "#general", "##general"] {
-            let room: Endpoint =
-                toml::from_str(&format!("service = 'rrc'\nroom = '{configured}'\n")).unwrap();
+            let room: Endpoint = toml::from_str(&format!(
+                "service = 'rrc'\nlxmf_group = false\nroom = '{configured}'\n"
+            ))
+            .unwrap();
             assert_eq!(room.room.as_deref(), Some("general"));
             c.bridges = vec![Bridge {
                 from: telegram.clone(),
@@ -652,8 +673,10 @@ mod tests {
             assert_eq!(c.destinations(&room), vec![telegram.clone()]);
         }
         for configured in ["#", "###"] {
-            c.bridges[0].to =
-                toml::from_str(&format!("service = 'rrc'\nroom = '{configured}'\n")).unwrap();
+            c.bridges[0].to = toml::from_str(&format!(
+                "service = 'rrc'\nlxmf_group = false\nroom = '{configured}'\n"
+            ))
+            .unwrap();
             assert!(c.validate().is_err());
         }
     }
@@ -675,7 +698,7 @@ mod tests {
             "",
             "[services]\n",
             "[retry]\nmax_attempts = 6\n",
-            "[[bridges]]\nfrom = { service = 'telegram', chat = '-100123' }\nto = { service = 'rrc', room = '#lobby' }\n",
+            "[[bridges]]\nfrom = { service = 'telegram', chat = '-100123', lxmf_group = false }\nto = { service = 'rrc', room = '#lobby', lxmf_group = false }\n",
         ] {
             let c: Config = toml::from_str(text).unwrap();
             c.validate().unwrap();
@@ -685,5 +708,24 @@ mod tests {
         let c: Config = toml::from_str("[services.telegram]\ntoken = 'TEST_TOKEN'\n").unwrap();
         c.validate().unwrap();
         assert!(c.bridges.is_empty());
+    }
+    #[test]
+    fn lxmf_group_uses_configured_source_in_both_directions() {
+        let mut config: Config =
+            toml::from_str(include_str!("../bridge-bot.toml.example")).unwrap();
+        config.bridges[0].to.lxmf_group = true;
+        let mut incoming = config.bridges[0].to.clone();
+        incoming.lxmf_group = false;
+        let routes: Vec<_> = config.routes_from(&incoming).collect();
+        assert_eq!(routes.len(), 1);
+        assert!(routes[0].0.lxmf_group);
+        assert_eq!(routes[0].1, &config.bridges[0].from);
+        let target = config.bridges[0].from.clone();
+        config.bridges[0].from = config.bridges[0].to.clone();
+        config.bridges[0].to = target;
+        config.bridges[0].bidirectional = false;
+        let routes: Vec<_> = config.routes_from(&incoming).collect();
+        assert_eq!(routes.len(), 1);
+        assert!(routes[0].0.lxmf_group);
     }
 }

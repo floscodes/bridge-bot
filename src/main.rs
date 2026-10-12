@@ -158,14 +158,17 @@ async fn main() -> Result<()> {
                     if !seen.insert(key.clone()) { continue; }
                     order.push_back(key);
                     if order.len() > 8192 && let Some(old) = order.pop_front() { seen.remove(&old); }
-                    let text = message.formatted();
                     let destinations = config.destinations(&message.origin);
                     if destinations.is_empty() && !config.has_inactive_route(&message.origin) && (message.origin.message_thread_id.is_some()
                         || matches!(config.services.get(&message.origin.service), Some(Service::Rrc { .. }))) {
                         tracing::error!(service = %message.origin.service, chat = %message.origin.chat, room = ?message.origin.room, message_thread_id = ?message.origin.message_thread_id,
                             "No explicit route for source room; message not forwarded");
                     }
-                    for destination in destinations {
+                    let mut queued = HashSet::new();
+                    for (source, destination) in config.routes_from(&message.origin) {
+                        if !queued.insert(destination.clone()) { continue; }
+                        let incoming = message.for_route(source);
+                        let text = incoming.formatted();
                         if let Err(error) = forwarder.enqueue(&destination, &text) {
                             tracing::error!(service = %destination.service, chat = %destination.chat, room = ?destination.room, message_thread_id = ?destination.message_thread_id, %error, "Forwarding queue rejected message");
                         }

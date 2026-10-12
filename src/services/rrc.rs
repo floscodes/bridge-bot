@@ -327,6 +327,7 @@ impl Rrc {
         let text = envelope.text().context("RRC text missing")?;
         Ok(Some(Incoming {
             origin: Endpoint {
+                lxmf_group: false,
                 message_thread_id: None,
                 service: self.name.clone(),
                 chat: String::new(),

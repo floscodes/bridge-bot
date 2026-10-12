@@ -153,6 +153,7 @@ fn source_endpoint(service: &str, message: &Message) -> Endpoint {
     let forum = matches!(&message.chat.kind, teloxide::types::ChatKind::Public(chat)
         if matches!(&chat.kind, teloxide::types::PublicChatKind::Supergroup(group) if group.is_forum));
     Endpoint {
+        lxmf_group: false,
         service: service.into(),
         chat: message.chat.id.to_string(),
         room: None,
