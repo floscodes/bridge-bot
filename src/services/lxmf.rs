@@ -274,16 +274,20 @@ impl Adapter for Lxmf {
         )
         .await?;
         let remote_identity = Identity::from_public_key(&remote.public_key)?;
+        let expected_destination = Destination::new(
+            Some(&remote_identity),
+            Direction::Out,
+            DestType::Single,
+            "lxmf.delivery",
+        )?
+        .hash;
         ensure!(
-            Destination::new(
-                Some(&remote_identity),
-                Direction::Out,
-                DestType::Single,
-                "lxmf.delivery"
-            )?
-            .hash
-                == destination,
-            "LXMF destination does not use the lxmf.delivery aspect"
+            expected_destination == destination,
+            "LXMF destination/identity mismatch: service={}, configured={}, identity={}, expected_lxmf_delivery={}; resolved identity does not match the configured LXMF address",
+            self.name,
+            hex::encode(destination),
+            hex::encode(remote_identity.hash),
+            hex::encode(expected_destination),
         );
         if let Some(cost) =
             lxmf_core::stamp_cost_from_app_data(remote.app_data.as_deref()).filter(|cost| *cost > 0)

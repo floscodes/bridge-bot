@@ -53,6 +53,8 @@ Run `cargo run --bin bridge-check -- --rrc` to also check connections to configu
 
 All bot log messages appear directly in the terminal on standard output, including debug and trace messages. `RUST_LOG` can additionally enable logs from dependencies; the bot's own messages always remain visible.
 
+Run `cargo run --bin lxmf-check` to resolve configured LXMF peer addresses and compare them with the delivery addresses derived from their announced public identities. It prints `configured`, `identity`, `lxmf_delivery`, and `matches` for each peer. The checker uses separate temporary network state, does not load the bot's private identity, and sends no chat messages or destination announces. LXMF routes require the delivery address in `chat`, not the identity hash. Use `-- --config PATH` for a different configuration file.
+
 Services and routes are optional. With no configured services, the bot logs `no services registered` and exits successfully. Routes to unconfigured services remain inactive without producing errors. RRC does not start without an active room route. Errors in explicitly configured services are still reported.
 
 ```toml
